@@ -7,10 +7,11 @@ HOSTNAME=
 HOSTED_ZONE_ID=
 # user:password
 TOKEN=
+INTERVAL=60 # seconds
 
 export AWS_SHARED_CREDENTIALS_FILE=aws-credentials
 IP_FILE=ip.txt
-URL=http://"$HOSTNAME"
+URL=http://"$HOSTNAME/health-check"
 
 
 function health_check() {
@@ -33,26 +34,26 @@ function update_dns() {
     log "Updating DNS from $LAST_IP to $IP."
     aws route53 change-resource-record-sets \
       --hosted-zone-id "$HOSTED_ZONE_ID" \
-      --change-batch "$(cat <<-JSON
-        {
-          "Comment": "Update $HOSTNAME DNS",
-          "Changes": [
+      --change-batch "$(cat <<JSON
+  {
+    "Comment": "Update $HOSTNAME DNS",
+    "Changes": [
+      {
+        "Action": "UPSERT",
+        "ResourceRecordSet": {
+          "Name": "$HOSTNAME",
+          "Type": "A",
+          "TTL": 60,
+          "ResourceRecords": [
             {
-              "Action": "UPSERT",
-              "ResourceRecordSet": {
-                "Name": "$HOSTNAME",
-                "Type": "A",
-                "TTL": 60,
-                "ResourceRecords": [
-                  {
-                    "Value": "$IP"
-                  }
-                ]
-              }
+              "Value": "$IP"
             }
           ]
         }
-      JSON
+      }
+    ]
+  }
+JSON
       )"
     echo "$IP" >| "$IP_FILE"
     log "DNS updated from $LAST_IP to $IP."
@@ -64,4 +65,4 @@ function log() {
 }
 
 log "Starting."
-while sleep 1; do health_check; done
+while sleep "$INTERVAL"; do health_check; done
