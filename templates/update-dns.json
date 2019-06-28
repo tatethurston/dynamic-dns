@@ -1,0 +1,18 @@
+{
+  "Comment": "Update $HOSTNAME DNS",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "$HOSTNAME",
+        "Type": "A",
+        "TTL": $DNS_TTL,
+        "ResourceRecords": [
+          {
+            "Value": "$IP"
+          }
+        ]
+      }
+    }
+  ]
+}

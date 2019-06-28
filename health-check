@@ -3,21 +3,25 @@
 set -euo pipefail
 shopt -s nullglob globstar
 
-HOSTNAME=
-HOSTED_ZONE_ID=
-# user:password
-TOKEN=
-INTERVAL=60 # seconds
+function main() {
+  log "Starting."
 
-export AWS_SHARED_CREDENTIALS_FILE=aws-credentials
-IP_FILE=ip.txt
-URL=http://"$HOSTNAME/health-check"
+  if [ -f .env ]; then
+    log ".env detected. Sourcing values."
+    source .env
+  fi
 
+  URL=http://"$HOSTNAME"
+  IP_FILE=ip.txt
+  CHECK_INTERVAL=${CHECK_INTERVAL:=60} # seconds
+  CHECK_TIMEOUT=${CHECK_TIMEOUT:=0.5}  # seconds
+  DNS_TTL=${DNS_TTL:=60}
+
+  while sleep "$CHECK_INTERVAL"; do health_check; done
+}
 
 function health_check() {
-  RES=$(curl "$URL" --user "$TOKEN" --max-time 0.5 --silent)
-  IP=$(cat $IP_FILE)
-  if [ "$RES" == "$IP" ]; then
+  if query_host; then
     log "OK"
   else
     log "FAILED. Checking DNS."
@@ -25,44 +29,50 @@ function health_check() {
   fi
 }
 
+function query_host() {
+  curl "$URL" --user "$TOKEN" --max-time "$CHECK_TIMEOUT" --silent > /dev/null
+}
+
 function update_dns() {
-  IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
-  LAST_IP=$(cat $IP_FILE)
+  IP=$(external_ip)
+  LAST_IP=$(get_ip)
   if [ "$IP" == "$LAST_IP" ]; then
     log "DNS is up to date. IP is $IP."
   else
     log "Updating DNS from $LAST_IP to $IP."
+
     aws route53 change-resource-record-sets \
       --hosted-zone-id "$HOSTED_ZONE_ID" \
-      --change-batch "$(cat <<JSON
-  {
-    "Comment": "Update $HOSTNAME DNS",
-    "Changes": [
-      {
-        "Action": "UPSERT",
-        "ResourceRecordSet": {
-          "Name": "$HOSTNAME",
-          "Type": "A",
-          "TTL": 60,
-          "ResourceRecords": [
-            {
-              "Value": "$IP"
-            }
-          ]
-        }
-      }
-    ]
-  }
-JSON
-      )"
-    echo "$IP" >| "$IP_FILE"
+      --change-batch "$(template templates/update-dns.json)"
+
+    set_ip "$IP"
+
     log "DNS updated from $LAST_IP to $IP."
   fi
 }
 
-function log() {
-  echo "[Health Check]" - "$(date)" - "$1"
+function set_ip() {
+  echo "$1" >| "$IP_FILE"
 }
 
-log "Starting."
-while sleep "$INTERVAL"; do health_check; done
+function get_ip() {
+  cat "$IP_FILE"
+}
+
+function external_ip() {
+  dig +short myip.opendns.com @resolver1.opendns.com
+}
+
+function template() {
+  eval "cat <<EOF
+$(< "$1")
+EOF
+"
+}
+
+function log() {
+  # ISO-8601 Date
+  echo "$(TZ=UTC date +'%Y-%m-%dT%H:%M:%SZ') [Health Check]: $1"
+}
+
+main
