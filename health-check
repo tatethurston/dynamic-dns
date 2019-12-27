@@ -7,7 +7,7 @@ function main() {
   log "Starting."
 
   if [ -f .env ]; then
-    log ".env detected. Sourcing values."
+    log "Detected '.env'. Sourcing values."
     source .env
   fi
 
@@ -30,7 +30,7 @@ function health_check() {
 }
 
 function query_host() {
-  curl "$URL" --user "$TOKEN" --max-time "$CHECK_TIMEOUT" --silent > /dev/null
+  curl "$URL" --max-time "$CHECK_TIMEOUT" --silent > /dev/null
 }
 
 function update_dns() {

@@ -1,1 +1,21 @@
-nginx -c `pwd`/nginx.conf -p "`pwd`"
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+PORT=80
+
+function main() {
+  log "Listening on port $PORT"
+  while true; do
+    nc -l 80 < templates/server-response.txt
+  done
+}
+
+function log() {
+  # ISO-8601 Date
+  echo "$(TZ=UTC date +'%Y-%m-%dT%H:%M:%SZ') [Health Check]: $1"
+}
+
+main
+
+
