@@ -4,8 +4,6 @@ set -euo pipefail
 shopt -s nullglob globstar
 
 function main() {
-  log "Starting."
-
   if [ -f .env ]; then
     log "Detected '.env'. Sourcing values."
     source .env
@@ -17,12 +15,13 @@ function main() {
   CHECK_TIMEOUT=${CHECK_TIMEOUT:=0.5}  # seconds
   DNS_TTL=${DNS_TTL:=60}
 
+  log "Checking $URL every $CHECK_INTERVAL seconds."
   while sleep "$CHECK_INTERVAL"; do health_check; done
 }
 
 function health_check() {
   if query_host; then
-    log "OK"
+    log "OK."
   else
     log "FAILED. Checking DNS."
     update_dns

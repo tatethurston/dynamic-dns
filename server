@@ -13,7 +13,7 @@ function main() {
 
 function log() {
   # ISO-8601 Date
-  echo "$(TZ=UTC date +'%Y-%m-%dT%H:%M:%SZ') [Health Check]: $1"
+  echo "$(TZ=UTC date +'%Y-%m-%dT%H:%M:%SZ') [Server]: $1"
 }
 
 main
