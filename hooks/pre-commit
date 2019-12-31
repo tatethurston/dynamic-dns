@@ -4,3 +4,4 @@ set -euo pipefail
 
 prettier --write ./**/*.md ./**/*.json
 shellcheck -x ./ddns ./health-check ./server
+bats test/*

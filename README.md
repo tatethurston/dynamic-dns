@@ -34,5 +34,6 @@ A bash implementation of [Dynamic DNS](https://en.wikipedia.org/wiki/Dynamic_DNS
 - Install Dev Dependencies
   - [Prettier](https://prettier.io) to format markdown and json
   - [Shellcheck](https://github.com/koalaman/shellcheck) to lint shell code
+  - [Bats](https://github.com/bats-core/bats-core) to test shell code
 - Install the git hooks
   - `git config core.hooksPath hooks`
